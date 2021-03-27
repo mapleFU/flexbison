@@ -122,7 +122,10 @@ Bison 处理的时候，语法如果有歧义，bison 会上报，但是可能�
 
 ## Chapter 2
 
-这一节介绍的是 `flex` 一些细很多的内容，其实不那么难理解：
+这一节介绍的是 `flex` 一些细很多的内容，其实不那么难理解，首先介绍了一下 flex 使用的正则，但是我觉得这都没啥介绍的。
+
+这一章介绍了 flex 的基本解析方式，同时，我们在第一章中直接从 `stdin` 读取数据，这一章将会介绍 flex 的 IO 相关的逻辑，来指导我们 flex “默认”情况 和非默认的情况
+
 
 ### 二义性
 
@@ -167,7 +170,11 @@ char **argv;
 }
 ```
 
-`yywrap` 是默认的 io, `yyin` 结束的时候，他们会调用 `yywrap`. 后者会调整 `yyin`, 重新开始分析
+`yyin` 是相当于程序的 `stdin`, 它大概是个 `FILE*` . 如果 `yylex` 前没有设置 `yyin` , 会自动设置 `stdin`.
+
+一般用户态 C 的 IO 都是走 buffer 的，flex 定义了 `YY_BUFFER_STATE`.
+
+`yywrap` 是默认的 io **调整**处理的函数, `yyin` 结束的时候，他们会调用 `yywrap`. 后者找出下一步该做什么，会调整 `yyin`, 重新开始分析
 
 这个 flex 禁了 `yywrap`, 然后 yyin 如果没赋值, `yylex` 会给它 `stdin` :
 
@@ -227,7 +234,90 @@ fb2-3 把上面的知识合并起来了，定义了一个比较复杂的程序�
 2. 读完一个文件的时候，对于 `<<EOF>>`，尝试 popfile
 3. 在读 `#include <{}>` 中间的内容的时候，丢给 `IFILE` 状态机，切换完后丢回来。
 
+感觉这个相当于切成另一种模式来处理了，我估计注释也可以这样处理？
+
+```C
+^"#"[ \t]*include[ \t]*[\"<] { BEGIN IFILE; }
+
+<IFILE>[^ \t\n\">]+          { 
+                             { int c;
+			       while((c = input()) && c != '\n') ;
+			     }
+			     yylineno++;
+			     if(!newfile(yytext))
+                                yyterminate(); /* no such file */
+			     BEGIN INITIAL;
+                           }
+
+<IFILE>.|\n                { fprintf(stderr, "%4d bad include line\n", yylineno);
+				     yyterminate();
+			   }
+^.                         { fprintf(yyout, "%4d %s", yylineno, yytext); }
+^\n                        { fprintf(yyout, "%4d %s", yylineno++, yytext); }
+\n                         { ECHO; yylineno++; }
+.                          { ECHO; }
+<<EOF>>                    { if(!popfile()) yyterminate(); }
+```
+
+`initial` 是默认的状态，它必要的时候也会跳回来
+
 ### 简单的符号表
 
-2.4 实现了一个简单的符号表
+2.4 实现了一个简单的符号表, 感觉举这个程序主要在于演示交互，即 flex 与 C 程序的交互(虽然符号表本身也对解析很重要)
+
+```c
+%{
+  struct symbol {		/* a word */
+    struct ref *reflist;
+    char *name;
+  };
+
+  struct ref {
+    struct ref *next;
+    char *filename;
+    int flags;
+    int lineno;
+  };
+
+  /* simple symtab of fixed size */
+  #define NHASH 9997
+  // It's a fucking global variable...
+  struct symbol symtab[NHASH];
+
+  struct symbol *lookup(char*);
+  void addref(int, char*, char*, int);
+
+  char *curfilename;		/* name of current input file */
+
+%}
+%%
+ /* skip common words */
+a |
+an |
+and |
+are |
+as |
+at |
+be |
+but |
+for |
+in |
+is |
+it |
+of |
+on |
+or |
+that |
+the |
+this |
+to                     /* ignore */
+
+[a-z]+(\'(s|t))?   { addref(yylineno, curfilename, yytext, 0); }
+.|\n                   /* ignore everything else */
+%%
+```
+
+这里遇见为定义的 keywords 必定调用 `addref`, 这个在 `%{ %}` 的 block 里定义了，处理查表逻辑。
+
+
 
