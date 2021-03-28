@@ -127,6 +127,7 @@ void treefree(struct ast *);
 extern int yylineno; /* from lexer */
 void yyerror(char *s, ...);
 
+// 我日，还有这个？debug flag.
 extern int debug;
 void dumpast(struct ast *a, int level);
 

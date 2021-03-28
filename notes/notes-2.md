@@ -175,11 +175,90 @@ exp: exp CMP exp          { $$ = newcmp($2, $1, $3); }
 
 bison 遇到冲突的时候，利用上面的规则/优先级来处理：
 
-1. 上面的比下面的优先
+1. 下面的比下面的优先结合，(注： `UMINUS` 是一个伪记号，表示单目 `-`）
 2. `nonassoc` 和 `right` 还有 `left` 指定了结合优先级。
+
+后面有个这样的定义：
+
+```
+exp: exp CMP exp          { $$ = newcmp($2, $1, $3); }
+   | exp '+' exp          { $$ = newast('+', $1,$3); }
+   | exp '-' exp          { $$ = newast('-', $1,$3);}
+   | exp '*' exp          { $$ = newast('*', $1,$3); }
+   | exp '/' exp          { $$ = newast('/', $1,$3); }
+   | '|' exp              { $$ = newast('|', $2, NULL); }
+   | '(' exp ')'          { $$ = $2; }
+   | '-' exp %prec UMINUS { $$ = newast('M', $2, NULL); }
+   | NUMBER               { $$ = newnum($1); }
+   | FUNC '(' explist ')' { $$ = newfunc($1, $3); }
+   | NAME                 { $$ = newref($1); }
+   | NAME '=' exp         { $$ = newasgn($1, $3); }
+   | NAME '(' explist ')' { $$ = newcall($1, $3); }
+```
+
+`-` 右比较低的优先级，但是 `%prec UMINUS` 给了它 `UMINUS` 的优先级。
 
 （我有点忘了编译原理了，有空想看下 parsing techniques）
 
 ### 让我们来看看这个非常复杂的程序
 
-1. 这里区分了语句 `stmt` 和表达式 `exp`
+```
+%union {
+  struct ast *a;
+  double d;
+  struct symbol *s;		/* which symbol */
+  struct symlist *sl;
+  int fn;			/* which function */
+}
+
+%type <a> exp stmt list explist
+```
+
+
+
+```
+stmt: IF exp THEN list           { $$ = newflow('I', $2, $4, NULL); }
+   | IF exp THEN list ELSE list  { $$ = newflow('I', $2, $4, $6); }
+   | WHILE exp DO list           { $$ = newflow('W', $2, $4, NULL); }
+   | exp
+;
+
+list: /* nothing */ { $$ = NULL; }
+   | stmt ';' list { if ($3 == NULL)
+	                $$ = $1;
+                      else
+			$$ = newast('L', $1, $3);
+                    }
+   ;
+```
+
+1. 这里区分了语句 `stmt` 和表达式 `exp`, stmt 是一个控制流或者表达式
+2. List 是一个右递归的定义，定义成 `stmt ; list`, 这个每次规约一个 `stmt` 处理，容易从头到位创建 list (但其实我也不是特别懂)
+
+`calclist` 建立在这两个东西上面:
+
+```
+%start calclist
+
+%%
+calclist: /* nothing */
+  | calclist stmt EOL {
+    if(debug) dumpast($2, 0);
+     printf("= %4.4g\n> ", eval($2));
+     treefree($2);
+    }
+  | calclist LET NAME '(' symlist ')' '=' list EOL {
+                       dodef($3, $5, $8);
+                       printf("Defined %s\n> ", $3->name); }
+
+  | calclist error EOL { yyerrok; printf("> "); }
+ ;
+%%
+
+```
+
+这里还保存了函数定义。然后 `error` 是为了将函数恢复到可用的状态。error 详见：
+
+1. https://www.gnu.org/software/bison/manual/html_node/Error-Recovery.html
+2. https://www.gnu.org/software/bison/manual/html_node/Error-Reporting-Function.html
+
