@@ -262,3 +262,6 @@ calclist: /* nothing */
 1. https://www.gnu.org/software/bison/manual/html_node/Error-Recovery.html
 2. https://www.gnu.org/software/bison/manual/html_node/Error-Reporting-Function.html
 
+#### 函数调用
+
+这里比较麻烦的是函数调用，`callbultin` 实现的比较简单，`calluser` 感觉巨 jb hack，先拿到一个参数列表，然后把上一层栈拷贝了了，再到这一层求值，再复原，这也太 hack 了...

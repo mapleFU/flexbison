@@ -336,6 +336,7 @@ calluser(struct ufncall *f)
   
   /* evaluate the arguments */
   for(i = 0; i < nargs; i++) {
+    // 这里 args 是一个链表，使用链表来处理
     if(!args) {
       yyerror("too few args in call to %s", fn->name);
       free(oldval); free(newval);
