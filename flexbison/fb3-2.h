@@ -9,6 +9,7 @@
  */
 
 /* symbol table */
+// 名称，存在的 ast 或者参数列表
 struct symbol {		/* a variable name */
   char *name;
   double value;
@@ -22,7 +23,9 @@ struct symbol symtab[NHASH];
 
 struct symbol *lookup(char*);
 
-/* list of symbols, for an argument list */
+/* list of symbols, for an argument list 
+  简单说就是参数列表
+*/
 struct symlist {
   struct symbol *sym;
   struct symlist *next;
@@ -45,6 +48,7 @@ void symlistfree(struct symlist *sl);
  *  C user function call
  */ 
 
+// 内置函数的类型
 enum bifs {			/* built-in functions */
   B_sqrt = 1,
   B_exp,
@@ -73,6 +77,7 @@ struct ufncall {		/* user function */
   struct symbol *s;
 };
 
+// 包含 if/else 和 while/do 的 flow 节点
 struct flow {
   int nodetype;			/* type I or W */
   struct ast *cond;		/* condition */
@@ -80,16 +85,19 @@ struct flow {
   struct ast *el;		/* optional else list */
 };
 
+// 定义的常量
 struct numval {
   int nodetype;			/* type K */
   double number;
 };
 
+// 符号引用
 struct symref {
   int nodetype;			/* type N */
   struct symbol *s;
 };
 
+// 赋值
 struct symasgn {
   int nodetype;			/* type = */
   struct symbol *s;
@@ -119,6 +127,7 @@ void treefree(struct ast *);
 extern int yylineno; /* from lexer */
 void yyerror(char *s, ...);
 
+// 我日，还有这个？debug flag.
 extern int debug;
 void dumpast(struct ast *a, int level);
 

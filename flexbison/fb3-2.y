@@ -7,9 +7,9 @@
 /* calculator with AST */
 
 %{
-#  include <stdio.h>
-#  include <stdlib.h>
-#  include "fb3-2.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "fb3-2.h"
 %}
 
 %union {

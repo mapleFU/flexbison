@@ -46,6 +46,7 @@ eval(struct ast *a)
 {
   double v;
   // 这里处理了 Nodetype. '-' 分为减法和 'M' 应该是处理二义性
+  // 最恶心的是 `ast` 强转 
   switch(a->nodetype) {
   case 'K': v = ((struct numval *)a)->number; break;
 
