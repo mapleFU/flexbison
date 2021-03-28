@@ -15,8 +15,8 @@ fb3-1:	fb3-1.l fb3-1.y fb3-1.h fb3-1funcs.c
 
 fb3-2:	fb3-2.l fb3-2.y fb3-2.h fb3-2funcs.c
 	bison -d fb3-2.y && \
-	flex -ofb3-2.lex.c fb3-2.l && \
-	cc -g -o $@ fb3-2.tab.c fb3-2.lex.c fb3-2funcs.c -lm
+	flex -o fb3-2.lex.c fb3-2.l && \
+	gcc -ll -lm -g fb3-2.tab.c fb3-2.lex.c fb3-2funcs.c -o fb3-2 
 
 clean:
 	rm -f fb3-1 fb3-2 \

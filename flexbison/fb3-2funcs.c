@@ -431,7 +431,6 @@ yyerror(char *s, ...)
   fprintf(stderr, "\n");
 }
 
-int
 int main()
 {
   printf("> "); 

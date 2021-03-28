@@ -16,6 +16,11 @@
 EXP	([Ee][-+]?[0-9]+)
 
 %%
+ /* 对于 operator, 每个 op 定义了不同的操作，直接返回对应的 yytext 
+    bool operator 返回 cmp, 这个地方 `<` 和 `<=` 用最长匹配的规则。
+    debug hack 的时候，因为优先匹配的关系，会先匹配 debug hack
+ */
+
  /* single character ops */
 "+" |
 "-" |
